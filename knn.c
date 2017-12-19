@@ -1,10 +1,12 @@
 #include<stdio.h>
+#include<stdlib.h>
 #include<math.h>
 
 #define MAX 64
 
 //N->Number of Data points  D->Dimensions of each
-int N,D;
+//k,e,min pts are parameters for the algorithm
+int N,D,k,e,minPts;
 float inf=1.0/0.0;
 
 //data is stored with an index and its dimensions
@@ -19,47 +21,65 @@ struct point
 typedef struct point POINT;
 
 //similarity matrix for given data
-struct list
+struct mat
 {
 	int index;
 
-        //dist of ith point from jth point
+        //dist of ith point from jth point(N such points)
         double dist[MAX];
 };	
 
-typedef struct list LIST;
+typedef struct mat MATRIX;
+
 
 int getData(POINT []);
 int printData(POINT []);
 double dist(POINT,POINT);
-int populateMatrix(LIST [],POINT []);
-int printList(LIST []);
+int populateMatrix(MATRIX [],POINT []);
+int printList(MATRIX []);
+int kNearest(MATRIX [],int ,int [][k]);
+int printNeighbours(int,int [][k]);
+
 
 int main()
 { 
-	//k,e,min pts are parameters for the algorithm
-	int i,j,k,e,minPts;
+	int i,j;
 	scanf("%d %d %d %d %d",&N,&D,&k,&e,&minPts);
 	
 	//declare array to store the data points
 	POINT data[N];
 
 	//declare an array to store the dist between any 2 points
-	LIST simMatrix[N];
+	MATRIX m[N];
 
 	//input the data
         getData(data);
 
         //populate the similarity matrix
-	populateMatrix(simMatrix,data);
+	populateMatrix(m,data);
+
+	int Neighbour[N][k];
 
 	//display the data
-//	printData(data);
+	printf("\nData: \n");
+	printData(data);
+	
+	//display Similarity Matrix
+	printf("\nOriginal Similarity Matrix: \n");
+	printList(m);
+        
+	//find the k-nearest neighbours
+	kNearest(m,k,Neighbour);
 
 	//display Similarity Matrix
-	printList(simMatrix);
+	printf("\nSimilarity Matrix: \n");
+	printList(m);
 
-	return 0;
+	//display k-nearest neighbours
+	printf("\nk-Nearest Neigbhours: \n");
+	printNeighbours(k,Neighbour);
+
+	printf("\n"); return 0;
 }
 
 //get Data from File 
@@ -116,7 +136,8 @@ double dist(POINT a,POINT b)
 	return dist;
 }	
 
-int populateMatrix(LIST a[],POINT src[])
+//compute the Similarity Matrix
+int populateMatrix(MATRIX a[],POINT src[])
 {
 	int i,j;
         for (i=0;i<N;i++)
@@ -133,7 +154,7 @@ int populateMatrix(LIST a[],POINT src[])
 }
 
 //print the list containing distance of two points
-int printList(LIST arr[])
+int printList(MATRIX arr[])
 {
 	int i,j;
 	for (i=0;i<N;i++)
@@ -146,5 +167,53 @@ int printList(LIST arr[])
 			printf("%3.2lf ",arr[i].dist[j]);
 		}
 		printf("] )\n");
+	}
+}
+
+int kNearest(MATRIX a[],int k,int n[][k])
+{ 
+	int i,j,min;
+  	float temp;
+
+	for (int l=0;l<N;l++)
+	{ 
+	  for(i=0;i<k;i++)
+          { 
+		  min=i;
+                  for (j=i;j<N;j++)
+		  { 
+			  if (a[l].dist[j]<=a[l].dist[min])
+		          { min=j; }
+		  }
+                  n[l][i]=min+1;
+	          temp=a[l].dist[min];
+	          a[l].dist[min]=a[l].dist[i];
+	          a[l].dist[i]=temp;
+          }
+	}
+}
+
+/*
+int kNearest(int k,int arr[][k],MATRIX src[])
+{
+	int i,j;
+	for (i=0;i<N;i++)
+	{
+		for (j=0;j<k;j++)
+		{ 
+			arr[i][j]=src[i].index[j];
+		}
+	}
+}
+*/
+
+int printNeighbours(int k,int arr[][k])
+{ 
+	int i,j;
+	for (i=0;i<N;i++)
+	{      
+		for (j=0;j<k;j++)
+		{ printf("%d ",arr[i][j]); }
+		printf("\n");
 	}
 }
