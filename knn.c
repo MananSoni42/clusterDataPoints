@@ -7,54 +7,44 @@
 //N->Number of Data points  D->Dimensions of each
 //k,e,min pts are parameters for the algorithm
 int N,D,k,e,minPts;
-float inf=1.0/0.0;
+float inf=1.0/0.0;	
 
-//data is stored with an index and its dimensions
-struct point
-{ 
-	int index;
-
-	//dimensions (D-tuples of points)
-	double dim[MAX];
-};
-
-typedef struct point POINT;
-
-//similarity matrix for given data
-struct mat
+struct node
 {
 	int index;
+	double *data;
+	struct node *next,*last;
+};
 
-        //dist of ith point from jth point(N such points)
-        double dist[MAX];
-};	
+typedef struct node NODE;
 
-typedef struct mat MATRIX;
+int getData(NODE**,int);
 
-
-int getData(POINT []);
-int printData(POINT []);
-double dist(POINT,POINT);
-int populateMatrix(MATRIX [],POINT []);
-int printList(MATRIX []);
-int kNearest(MATRIX [],int ,int [][k]);
-int printNeighbours(int,int [][k]);
-
+NODE* getNode(NODE*,int,int,double []);
+NODE* addNode(NODE*,int,int,double []);
+void printList(NODE*,int);
+void freeList(NODE*);
 
 int main()
 { 
 	int i,j;
 	scanf("%d %d %d %d %d",&N,&D,&k,&e,&minPts);
 	
-	//declare array to store the data points
-	POINT data[N];
+	//declare DLL to store the data points
+	NODE *point=NULL; int p_size=D;
 
-	//declare an array to store the dist between any 2 points
-	MATRIX m[N];
+	//declare DLL to store the dist between any 2 points(Similarity Matrix)
+	NODE *m; int m_size=N;
 
 	//input the data
-        getData(data);
+        getData(&point,p_size);
 
+	//print the data
+	printList(point,p_size);
+
+	//free memory
+	freeList(point);
+/*
         //populate the similarity matrix
 	populateMatrix(m,data);
 
@@ -78,26 +68,28 @@ int main()
 	//display k-nearest neighbours
 	printf("\nk-Nearest Neigbhours: \n");
 	printNeighbours(k,Neighbour);
-
+*/
 	printf("\n"); return 0;
 }
 
 //get Data from File 
 //Format: N sets each consists of D space seperated values
-int getData(POINT data[])
+int getData(NODE** p,int size)
 {
-        int i,j;	
+	int i,j;
+	double inp[size];
+        
 	for (i=0;i<N;i++)
-	{	
-	       data[i].index=i+1;	
-	       for (j=0;j<D;j++)
-	       {
-		       scanf("%lf",&data[i].dim[j]);
-
-	       }  
+	{ 
+		for(j=0;j<size;j++)
+		{
+			scanf("%lf",&inp[j]);
+		}
+		*p = addNode(*p,i+1,D,inp);
 	}
 }
 
+/*
 //print the list 
 int printData(POINT data[])
 {
@@ -193,7 +185,7 @@ int kNearest(MATRIX a[],int k,int n[][k])
 	}
 }
 
-/*
+
 int kNearest(int k,int arr[][k],MATRIX src[])
 {
 	int i,j;
@@ -205,7 +197,7 @@ int kNearest(int k,int arr[][k],MATRIX src[])
 		}
 	}
 }
-*/
+
 
 int printNeighbours(int k,int arr[][k])
 { 
@@ -215,5 +207,70 @@ int printNeighbours(int k,int arr[][k])
 		for (j=0;j<k;j++)
 		{ printf("%d ",arr[i][j]); }
 		printf("\n");
+	}
+}
+*/
+
+NODE* getNode(NODE* n,int ind,int size,double d[])
+{
+	n = malloc( sizeof(NODE) );
+	n->next = NULL;
+	n->last = NULL;
+	n->index = ind;
+	n->data = malloc( size*sizeof(double) );
+	
+	for (int i=0;i<size;i++)
+	{
+		*( (n->data)+i ) = d[i];
+	}
+
+	return n;
+}
+
+NODE* addNode(NODE* head,int ind,int size,double d[])
+{
+	NODE *new;
+	new = getNode(new,ind,size,d);
+
+	if (head==NULL)	
+	{ 
+		head = new; 
+		return head; 
+	}
+
+	else
+	{ 
+		NODE *p;
+		p = head;
+		while ( p->next!=NULL )
+		{ p = p->next; }
+		p->next = new;
+		new->last = p;
+	}
+
+	return head;
+}
+
+void printList(NODE* head,int size)
+{
+	while(head!=NULL)
+	{
+		printf("(%2d [ ",head->index);
+		for (int i=0;i<size;i++)
+		{ printf("%3.2lf ",head->data[i]); }
+		printf("] )\n");
+		head=head->next;
+	}
+}
+
+void freeList(NODE* head)
+{
+	NODE* temp;
+	while(head!=NULL)
+	{
+		temp=head;
+		head=head->next;
+		free(temp->data);
+		free(temp);
 	}
 }
