@@ -114,7 +114,8 @@ int populateMatrix(NODE** m,int sM,int mData,NODE* p,int sP,int pData)
 	{
 		aj=p;
 		for (j=0;j<mData;j++)
-		{ 
+		{
+			//dist is inf for P(i,i)	
 			if (i==j)
 			{ dist[j]=inf;  }
 			else
@@ -130,40 +131,48 @@ int populateMatrix(NODE** m,int sM,int mData,NODE* p,int sP,int pData)
 //find the K-Nearest Neighbours for the given Similarity Matrix
 int kNearest(NODE** n,int nSize,int nData,NODE* m,int mSize,int mData)
 { 
-	int i,j,k,min;
-	NODE *p,*q;
+	int i,j,k,min,c;
   	float temp;
-	double nbr[nData];
-
+	double nbr[nData],arr[mData];
+	
 	for (i=0;i<nSize;i++)
 	{
+		for (k=0;k<mData;k++)
+		{ arr[k]=m->data[k]; }
+
 		//similar to Selection Sort but only runs for 'K' iterations
-		p=m; q=m;
 		for (j=0;j<nData;j++)
 		{       
 			//find minimum
 			min = j;
-			for (k=j;k<mData;k++)
+			if (min==inf)
+			{	c=j;
+				min=c;
+				if (c==mData)
+				{ break; }
+				c++;
+
+			}
+
+			for (k=0;k<mData;k++)
 			{
-				if ( (q->data)[k] <= (q->data)[min] )
+
+				if ( arr[k] <= arr[min] )
 				{ min=k; }
 			}
 
 			//nbr is min node's index
 			nbr[j] = min+1;
 
-			//swap
-			temp = (q->data)[min];
-			
-			(q->data)[min] = (q->data)[j];
-			
-			(q->data)[j] = temp;
+			//replace with max+1
+			arr[min]=inf;
 		}
 
 		//sort the neighbours according to index
 		selection(nbr,nData);
 
 		*n=addNode(*n,i+1,nData,nbr);
+		//next element
 		m=m->next;
 	}
 
