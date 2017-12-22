@@ -127,7 +127,7 @@ int populateMatrix(NODE** m,int sM,int mData,NODE* p,int sP,int pData)
 	}
 }
 
-
+//find the K-Nearest Neighbours for the given Similarity Matrix
 int kNearest(NODE** n,int nSize,int nData,NODE* m,int mSize,int mData)
 { 
 	int i,j,k,min;
@@ -137,9 +137,11 @@ int kNearest(NODE** n,int nSize,int nData,NODE* m,int mSize,int mData)
 
 	for (i=0;i<nSize;i++)
 	{
+		//similar to Selection Sort but only runs for 'K' iterations
 		p=m; q=m;
 		for (j=0;j<nData;j++)
 		{       
+			//find minimum
 			min = j;
 			for (k=j;k<mData;k++)
 			{
@@ -147,23 +149,27 @@ int kNearest(NODE** n,int nSize,int nData,NODE* m,int mSize,int mData)
 				{ min=k; }
 			}
 
+			//nbr is min node's index
 			nbr[j] = min+1;
 
+			//swap
 			temp = (q->data)[min];
 			
 			(q->data)[min] = (q->data)[j];
 			
 			(q->data)[j] = temp;
 		}
+
+		//sort the neighbours according to index
 		selection(nbr,nData);
 
-		*n=addNode(*n,j+1,nData,nbr);
+		*n=addNode(*n,i+1,nData,nbr);
 		m=m->next;
 	}
 
 }
 
-
+//return node with specified values (initialize it)
 NODE* getNode(NODE* n,int ind,int size,double d[])
 {
 	n = malloc( sizeof(NODE) );
@@ -180,6 +186,7 @@ NODE* getNode(NODE* n,int ind,int size,double d[])
 	return n;
 }
 
+//Add a Node to DLL head with index i and data(d) of specified size
 NODE* addNode(NODE* head,int ind,int dataSize,double d[])
 {
 	NODE *new;
@@ -204,6 +211,7 @@ NODE* addNode(NODE* head,int ind,int dataSize,double d[])
 	return head;
 }
 
+//print given List
 void printList(NODE* head,int d_s)
 {
 	while(head!=NULL)
@@ -216,6 +224,7 @@ void printList(NODE* head,int d_s)
 	}
 }
 
+//deallocate memory for the List
 void freeList(NODE* head)
 {
 	NODE* temp;
@@ -228,6 +237,7 @@ void freeList(NODE* head)
 	}
 }
 
+//selection sort
 int selection(double a[],int n)
 { int i,j,min,temp;
   for(i=0;i<n;i++)
