@@ -55,6 +55,16 @@ The problem is implemented using c in `gcc version 7.2.0`
 here is an example on how to run the program:  
 ```./knn < Sample_input.txt```  
 you can replace the Sample_input.txt with your own file given that it has the correct format  
+#### Input Format
+Input Format:
+Each input would be given in a file in the following format. First line would contain five space
+separated parameters as follows.  
+ `N D K ε MinPts`  
+  N = Number of points in the dataset  
+	 D = Dimensions of each point  
+	 K, ε, MinPts are parameters for the algorithm  
+	This is followed by N lines each representing a data point of D dimensions.
+ 
 #### Authors
   - **Manan Soni** - [MananSoni42](https://github.com/MananSoni42/)
   - **Abhishek V Joshi** - [jbnerd](https://github.com/jbnerd)
