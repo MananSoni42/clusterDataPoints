@@ -11,11 +11,15 @@
 //k,e,min pts are parameters for the algorithm
 
 float inf=1.0/0.0;
+enum type {border,core,noise};
+
+/* -- data structures(DLL) -- */
 
 struct node
 {
 	int index;
 	double *data;
+	enum type t;
 	struct node *next,*last;
 };
 
@@ -30,6 +34,8 @@ struct gr
 
 typedef struct gr GRAPH;
 
+/* -- functions -- */
+
 int getData(NODE**,int,int);
 int populateMatrix(NODE**,int,int,NODE*,int,int);
 int kNearest(NODE**,int,int,NODE*,int,int);
@@ -38,6 +44,9 @@ int findWeight(NODE*,NODE*,int);
 int sortGraph(int [],int [],int);
 int populateGraph(GRAPH**,int,NODE*,int,int);
 int getDensity(NODE**,int,int,GRAPH*,int,int);
+int getCorePts(NODE**,int*,int,NODE*,int,NODE*,int,int);
+
+/* -- functions used to manipulate DLLs -- */
 
 NODE* getNode(NODE*,int,int,double []);
 NODE* addNode(NODE*,int,int,double []);
@@ -49,8 +58,12 @@ GRAPH* addGraph(GRAPH*,int,int,int [],int []);
 void printGraph(GRAPH*);
 void freeGraph(GRAPH*);
 
+
+/* -- Main -- */
+
 int main()
 {
+	//scan inital Line of input
 	int i,j,N,D,K,E,minPts;
 	scanf("%d %d %d %d %d",&N,&D,&K,&E,&minPts);
 
@@ -67,7 +80,10 @@ int main()
 	GRAPH* g=NULL; int gSize=N;
 
 	//declare DLL to store Density
-	NODE* dnsty=NULL; int dnstySize=N,dnstyDataSize=1;
+	NODE* dnsty=NULL; int dSize=N,dDataSize=1;
+
+	//store List of core points (their size is determined at runtime)
+	NODE* corePt=NULL; int coreSize,coreDataSize=1;
 
 	//input the data
         getData(&point,pSize,pDataSize);
@@ -97,12 +113,19 @@ int main()
 	printf("\nGraph: \n");
 	printGraph(g);
 
-	//get density
-	getDensity(&dnsty,dnstySize,dnstyDataSize,g,gSize,E);
+	//get density (also update type of required points to core)
+	getDensity(&dnsty,dSize,dDataSize,g,gSize,E);
 
 	//print the density
 	printf("\nDensity: \n");
-	printList(dnsty,dnstyDataSize);
+	printList(dnsty,dDataSize);
+
+	//get core Points List
+	getCorePts(&corePt,&coreSize,coreDataSize,point,pSize,dnsty,dSize,minPts);
+
+	//print core Points
+	printf("\nCore Points: \n");
+	printList(corePt,coreDataSize);
 
 	//free memory
 	freeList(point);
@@ -110,9 +133,14 @@ int main()
 	freeList(nbr);
 	freeGraph(g);
 	freeList(dnsty);
+	freeList(corePt);
 
 	printf("\n"); return 0;
 }
+
+
+/** -- Functions used in Main -- */
+
 
 //get Data from File
 //Format: 'size' sets each consists of 'dataSize' space seperated values
@@ -276,6 +304,7 @@ int sortGraph(int p[],int w[],int size)
 		}
 	}
 }
+
 //create the graph g given data(KNN) n
 int populateGraph(GRAPH** g,int gSize,NODE* n,int nSize,int nData)
 {
@@ -324,6 +353,7 @@ int populateGraph(GRAPH** g,int gSize,NODE* n,int nSize,int nData)
 	}	
 }
 
+//find the density of each point
 int getDensity(NODE** dnsty,int dSize,int dData,GRAPH* g,int gSize,int E)
 {
 	int i,j,count;
@@ -332,6 +362,7 @@ int getDensity(NODE** dnsty,int dSize,int dData,GRAPH* g,int gSize,int E)
 	for (i=0;i<dSize;i++)
 	{
 		count=0;
+		//only count if weight is greater than E
 		for (j=0;j<p->size;j++)
 		{
 			if (p->wght[j] >= E)
@@ -344,6 +375,35 @@ int getDensity(NODE** dnsty,int dSize,int dData,GRAPH* g,int gSize,int E)
 	}
 }
 
+int getCorePts(NODE** c,int* cSize,int cData,NODE* p,int pSize,NODE* d,int dSize,int mp)
+{
+	int i,count=0;
+	double a[pSize];
+
+	for (i=0;i<pSize;i++)
+	{
+		if (d->data[0]>=mp)
+		{
+			p->t = core;
+			a[count++] = p->index;
+		}
+
+		d=d->next;
+		p=p->next;
+	}
+
+	selection(a,count);
+
+	*cSize = count;
+
+	for (i=0;i<count;i++)
+	{ *c=addNode(*c,i+1,1,&a[i]); }
+}
+
+
+
+/* -- Functions used to Manipulate DLL (NODE and GRAPH) + Selection Sort  -- */
+
 
 //return node with specified values (initialize it)
 NODE* getNode(NODE* n,int ind,int size,double d[])
@@ -351,6 +411,7 @@ NODE* getNode(NODE* n,int ind,int size,double d[])
 	n = malloc( sizeof(NODE) );
 	n->next = NULL;
 	n->last = NULL;
+	n->t = border;
 	n->index = ind;
 	n->data = malloc( size*sizeof(double) );
 
