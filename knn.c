@@ -3,6 +3,8 @@
 #include<math.h>
 #include<stdbool.h>
 
+//compile like gcc knn.c -o knn -lm
+
 #define MAX 64
 
 //N->Number of Data points  D->Dimensions of each
@@ -35,6 +37,7 @@ int selection(double [],int);
 int findWeight(NODE*,NODE*,int);
 int sortGraph(int [],int [],int);
 int populateGraph(GRAPH**,int,NODE*,int,int);
+int getDensity(NODE**,int,int,GRAPH*,int,int);
 
 NODE* getNode(NODE*,int,int,double []);
 NODE* addNode(NODE*,int,int,double []);
@@ -62,6 +65,9 @@ int main()
 
 	//declare graph G(DLL)
 	GRAPH* g=NULL; int gSize=N;
+
+	//declare DLL to store Density
+	NODE* dnsty=NULL; int dnstySize=N,dnstyDataSize=1;
 
 	//input the data
         getData(&point,pSize,pDataSize);
@@ -91,10 +97,19 @@ int main()
 	printf("\nGraph: \n");
 	printGraph(g);
 
+	//get density
+	getDensity(&dnsty,dnstySize,dnstyDataSize,g,gSize,E);
+
+	//print the density
+	printf("\nDensity: \n");
+	printList(dnsty,dnstyDataSize);
+
 	//free memory
 	freeList(point);
 	freeList(m);
 	freeList(nbr);
+	freeGraph(g);
+	freeList(dnsty);
 
 	printf("\n"); return 0;
 }
@@ -308,6 +323,27 @@ int populateGraph(GRAPH** g,int gSize,NODE* n,int nSize,int nData)
 		*g=addGraph(*g,i+1,a,prr,wrr);
 	}	
 }
+
+int getDensity(NODE** dnsty,int dSize,int dData,GRAPH* g,int gSize,int E)
+{
+	int i,j,count;
+	double data;
+	GRAPH* p=g;
+	for (i=0;i<dSize;i++)
+	{
+		count=0;
+		for (j=0;j<p->size;j++)
+		{
+			if (p->wght[j] >= E)
+			{ count++; }
+		}
+
+		data=count;
+		*dnsty=addNode(*dnsty,i+1,1,&data);
+		p=p->next;
+	}
+}
+
 
 //return node with specified values (initialize it)
 NODE* getNode(NODE* n,int ind,int size,double d[])
