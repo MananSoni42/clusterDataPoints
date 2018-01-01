@@ -45,6 +45,7 @@ int sortGraph(int [],int [],int);
 int populateGraph(GRAPH**,int,NODE*,int,int);
 int getDensity(NODE**,int,int,GRAPH*,int,int);
 int getCorePts(NODE**,int*,int,NODE*,int,NODE*,int,int);
+int cluster(NODE**,int*,int*,GRAPH*,int,NODE*,int,int,int);
 
 /* -- functions used to manipulate DLLs -- */
 
@@ -85,47 +86,57 @@ int main()
 	//store List of core points (their size is determined at runtime)
 	NODE* corePt=NULL; int coreSize,coreDataSize=1;
 
+	//clusters sotred as DLLs (variable number,variable size of each)
+	NODE* clust=NULL; int cSize,cDataSize;
+
 	//input the data
         getData(&point,pSize,pDataSize);
 
+	//print the data
+	//printf("Points: \n");
+	//printList(point,pDataSize);
+	
 	//fill Similarity Matrix
 	populateMatrix(&m,mSize,mDataSize,point,pSize,pDataSize);
 
-	//print the data
-	printf("Points: \n");
-	printList(point,pDataSize);
-
 	//print matrix
-	printf("\nSimilarity Matrix: \n");
-	printList(m,mDataSize);
-
+	//printf("\nSimilarity Matrix: \n");
+	//printList(m,mDataSize);
+	
 	//calculate k-nearest Neighbours
 	kNearest(&nbr,nbrSize,nbrDataSize,m,mSize,mDataSize);
 
         //print k-Nearest Neighbours
-	printf("\nk-Nearest Neighbours: \n");
-	printList(nbr,nbrDataSize);
+	//printf("\nk-Nearest Neighbours: \n");
+	//printList(nbr,nbrDataSize);
 
 	//Create the Graph
 	populateGraph(&g,gSize,nbr,nbrSize,nbrDataSize);
 
 	//print the graph
-	printf("\nGraph: \n");
-	printGraph(g);
+	//printf("\nGraph: \n");
+	//printGraph(g);
 
 	//get density (also update type of required points to core)
 	getDensity(&dnsty,dSize,dDataSize,g,gSize,E);
 
 	//print the density
-	printf("\nDensity: \n");
-	printList(dnsty,dDataSize);
+	//printf("\nDensity: \n");
+	//printList(dnsty,dDataSize);
 
 	//get core Points List
 	getCorePts(&corePt,&coreSize,coreDataSize,point,pSize,dnsty,dSize,minPts);
 
 	//print core Points
-	printf("\nCore Points: \n");
-	printList(corePt,coreDataSize);
+	//printf("\nCore Points: \n");
+	//printList(corePt,coreDataSize);
+
+	//make clusters
+	cluster(&clust,&cSize,&cDataSize,g,gSize,corePt,coreSize,coreDataSize,pSize);
+
+	//print Clusters
+	//printf("\nClusters: \n");
+	//printList(clust);
 
 	//free memory
 	freeList(point);
@@ -375,6 +386,7 @@ int getDensity(NODE** dnsty,int dSize,int dData,GRAPH* g,int gSize,int E)
 	}
 }
 
+//find Core Points
 int getCorePts(NODE** c,int* cSize,int cData,NODE* p,int pSize,NODE* d,int dSize,int mp)
 {
 	int i,count=0;
@@ -401,6 +413,109 @@ int getCorePts(NODE** c,int* cSize,int cData,NODE* p,int pSize,NODE* d,int dSize
 }
 
 
+//find clusters
+int cluster(NODE** cl,int* clSize,int* clData,GRAPH* g,int gSize,NODE* core,int coreSize,int coreData,int pSize)
+{
+	int i,clustNum=1,clust[pSize],ind;
+	NODE *p,*r; GRAPH* q;
+	bool flag=false,visit[pSize],findCore[pSize];
+
+	//set initial values
+	for (i=0;i<pSize;i++)
+	{ findCore[i]=false; visit[i]=false; clust[i]=false; }
+
+	p=core;
+	for (i=0;i<coreSize;i++)
+	{
+		findCore[(int)(p->data[0])-1]=true;
+ 		p = p->next;	
+	}	
+
+	//main logic
+	while(true)
+	{
+		//set initial parameters
+		flag = false;
+		p = core;
+
+		//find an unvisited core Pt	
+		for (i=0;i<coreSize;i++)
+		{
+			if (visit[(int)(p->data[0])-1]==false)
+			{ flag = true; break; }
+
+			p = p->next;
+		}
+
+		//break condition -> All core points have clusters(no unvisited Pt)
+		if (flag==false)
+		{ break; }
+
+		//add this point to cluster
+		clust[(int)(p->data[0])-1] = clustNum;
+
+		//add this point as visited
+		visit[(int)(p->data[0])-1] = true;
+
+		//find all points in cluster with p
+		while (true)
+		{
+			//set intial parameters
+			q = g;
+			flag = false;
+
+			//find graph of p
+			while ( (int)(p->data[0]) != q->index  )
+			{ q = q->next; }
+
+			//find unvisited CORE point in graph of p -> ind
+			for (i=0;i<q->size;i++)
+			{
+				if ( visit[q->pnt[i]-1]==false && findCore[q->pnt[i]-1]==true )
+				{ 
+					flag = true; 
+					ind = q->pnt[i]; 
+					break; 
+				}
+			}
+
+			//break condition -> no more unvisited points in that graph
+			if (flag==false)
+			{ break; }
+
+			//find next point (in core)
+			r=core;
+			while(r!=NULL)
+			{
+				if ( (int)(r->data[0]) == ind )
+				{ break; }
+
+				r = r->next;
+			}
+
+			//set ind point as visited
+			visit[ind-1]=true;
+
+			//add ind point to cluster
+			clust[ind-1]=clustNum;
+
+			//set current point (p) to next point 
+			p = r;
+		}
+
+		//try to find next cluster
+		clustNum++;
+
+	}
+
+	//add clusters
+	//TODO
+
+	for (i=0;i<pSize;i++)
+	{ 
+		printf ("%d in %d \n",i+1,clust[i]);
+	}
+}		
 
 /* -- Functions used to Manipulate DLL (NODE and GRAPH) + Selection Sort  -- */
 
