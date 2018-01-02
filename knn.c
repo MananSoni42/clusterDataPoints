@@ -414,22 +414,66 @@ int getCorePts(NODE** c,int* cSize,int cData,NODE* p,int pSize,NODE* d,int dSize
 	{ *c=addNode(*c,i+1,1,&a[i]); }
 }
 
+//find all points in cluster with p
+int nextpt(NODE* p,NODE* core,GRAPH* g,bool visit[],int clust[],bool isCore[],int clustNum )
+{
+	NODE *r;
+	GRAPH *q;
+	bool flag;
+	int ind,i;
+
+	//set intial parameters
+	q = g;
+	flag = false;
+
+	//find graph of p
+	while ( (int)(p->data[0]) != q->index  )
+	{ q = q->next; }
+	
+	//find unvisited CORE point in graph of p -> ind
+	for (i=0;i<q->size;i++)
+	{
+		if ( visit[q->pnt[i]-1]==false && isCore[q->pnt[i]-1]==true )
+		{ 
+			//find unvisited graph index
+			ind = q->pnt[i]; 
+			
+			//find next point (in core) with same index
+			r=core;
+			while(r!=NULL)
+			{
+				if ( (int)(r->data[0]) == ind )
+				{ break; }
+				r = r->next;
+			}
+
+			//set index point as visited
+			visit[ind-1]=true;
+
+			//add index point to cluster
+			clust[ind-1]=clustNum;
+			
+			//go to next point
+			nextpt(r,core,g,visit,clust,isCore,clustNum);
+		}
+	}
+}
 
 //find clusters
 int cluster(GRAPH* g,int gSize,NODE* core,int coreSize,int coreData,int pSize,int data [][coreSize],int** n,int *cln)
 {
 	int i,clustNum=0,clust[pSize],ind;
-	NODE *p,*r; GRAPH* q;
-	bool flag=false,visit[pSize],findCore[pSize];
+	NODE *p;
+	bool flag=false,visit[pSize],isCore[pSize];
 
 	//set initial values
 	for (i=0;i<pSize;i++)
-	{ findCore[i]=false; visit[i]=false; clust[i]=-1; }
+	{ isCore[i]=false; visit[i]=false; clust[i]=-1; }
 
 	p=core;
 	for (i=0;i<coreSize;i++)
 	{
-		findCore[(int)(p->data[0])-1]=true;
+		isCore[(int)(p->data[0])-1]=true;
  		p = p->next;	
 	}	
 
@@ -459,55 +503,11 @@ int cluster(GRAPH* g,int gSize,NODE* core,int coreSize,int coreData,int pSize,in
 		//add this point as visited
 		visit[(int)(p->data[0])-1] = true;
 
-		//find all points in cluster with p
-		while (true)
-		{
-			//set intial parameters
-			q = g;
-			flag = false;
-
-			//find graph of p
-			while ( (int)(p->data[0]) != q->index  )
-			{ q = q->next; }
-
-			//find unvisited CORE point in graph of p -> ind
-			for (i=0;i<q->size;i++)
-			{
-				if ( visit[q->pnt[i]-1]==false && findCore[q->pnt[i]-1]==true )
-				{ 
-					flag = true; 
-					ind = q->pnt[i]; 
-					break; 
-				}
-			}
-
-			//break condition -> no more unvisited points in that graph
-			if (flag==false)
-			{ break; }
-
-			//find next point (in core)
-			r=core;
-			while(r!=NULL)
-			{
-				if ( (int)(r->data[0]) == ind )
-				{ break; }
-
-				r = r->next;
-			}
-
-			//set ind point as visited
-			visit[ind-1]=true;
-
-			//add ind point to cluster
-			clust[ind-1]=clustNum;
-
-			//set current point (p) to next point 
-			p = r;
-		}
+		//make cluster with p
+		nextpt(p,core,g,visit,clust,isCore,clustNum);
 
 		//try to find next cluster
 		clustNum++;
-
 	}
 
 	*cln=clustNum;
