@@ -3,7 +3,7 @@
 #include<math.h>
 #include<stdbool.h>
 
-//compile like gcc knn.c -o knn -lm
+//compile -> gcc knn.c -o knn -lm
 
 #define MAX 64
 
@@ -45,7 +45,8 @@ int sortGraph(int [],int [],int);
 int populateGraph(GRAPH**,int,NODE*,int,int);
 int getDensity(NODE**,int,int,GRAPH*,int,int);
 int getCorePts(NODE**,int*,int,NODE*,int,NODE*,int,int);
-int cluster(NODE**,int*,int*,GRAPH*,int,NODE*,int,int,int);
+int cluster(GRAPH*,int,NODE*,int coreSize,int,int,int [][coreSize],int**,int*);
+void printCluster(int [],int,int coreSize,int data[][coreSize]);
 
 /* -- functions used to manipulate DLLs -- */
 
@@ -86,58 +87,59 @@ int main()
 	//store List of core points (their size is determined at runtime)
 	NODE* corePt=NULL; int coreSize,coreDataSize=1;
 
-	//clusters sotred as DLLs (variable number,variable size of each)
-	NODE* clust=NULL; int cSize,cDataSize;
+	//clusters sorted as arrays in data (variable number,variable size of each)
+	int *num,clustNum;
+	int data[clustNum][coreSize];
 
 	//input the data
         getData(&point,pSize,pDataSize);
 
 	//print the data
-	//printf("Points: \n");
-	//printList(point,pDataSize);
+	printf("Points: \n");
+	printList(point,pDataSize);
 	
 	//fill Similarity Matrix
 	populateMatrix(&m,mSize,mDataSize,point,pSize,pDataSize);
 
 	//print matrix
-	//printf("\nSimilarity Matrix: \n");
-	//printList(m,mDataSize);
+	printf("\nSimilarity Matrix: \n");
+	printList(m,mDataSize);
 	
 	//calculate k-nearest Neighbours
 	kNearest(&nbr,nbrSize,nbrDataSize,m,mSize,mDataSize);
 
         //print k-Nearest Neighbours
-	//printf("\nk-Nearest Neighbours: \n");
-	//printList(nbr,nbrDataSize);
+	printf("\nk-Nearest Neighbours: \n");
+	printList(nbr,nbrDataSize);
 
 	//Create the Graph
 	populateGraph(&g,gSize,nbr,nbrSize,nbrDataSize);
 
 	//print the graph
-	//printf("\nGraph: \n");
-	//printGraph(g);
+	printf("\nGraph: \n");
+	printGraph(g);
 
 	//get density (also update type of required points to core)
 	getDensity(&dnsty,dSize,dDataSize,g,gSize,E);
 
 	//print the density
-	//printf("\nDensity: \n");
-	//printList(dnsty,dDataSize);
+	printf("\nDensity: \n");
+	printList(dnsty,dDataSize);
 
 	//get core Points List
 	getCorePts(&corePt,&coreSize,coreDataSize,point,pSize,dnsty,dSize,minPts);
 
 	//print core Points
-	//printf("\nCore Points: \n");
-	//printList(corePt,coreDataSize);
+	printf("\nCore Points: \n");
+	printList(corePt,coreDataSize);
 
 	//make clusters
-	cluster(&clust,&cSize,&cDataSize,g,gSize,corePt,coreSize,coreDataSize,pSize);
+	cluster(g,gSize,corePt,coreSize,coreDataSize,pSize,data,&num,&clustNum);
 
 	//print Clusters
-	//printf("\nClusters: \n");
-	//printList(clust);
-
+	printf("\n Clusters: \n");
+	printCluster(num,clustNum,coreSize,data);
+				
 	//free memory
 	freeList(point);
 	freeList(m);
@@ -414,15 +416,15 @@ int getCorePts(NODE** c,int* cSize,int cData,NODE* p,int pSize,NODE* d,int dSize
 
 
 //find clusters
-int cluster(NODE** cl,int* clSize,int* clData,GRAPH* g,int gSize,NODE* core,int coreSize,int coreData,int pSize)
+int cluster(GRAPH* g,int gSize,NODE* core,int coreSize,int coreData,int pSize,int data [][coreSize],int** n,int *cln)
 {
-	int i,clustNum=1,clust[pSize],ind;
+	int i,clustNum=0,clust[pSize],ind;
 	NODE *p,*r; GRAPH* q;
 	bool flag=false,visit[pSize],findCore[pSize];
 
 	//set initial values
 	for (i=0;i<pSize;i++)
-	{ findCore[i]=false; visit[i]=false; clust[i]=false; }
+	{ findCore[i]=false; visit[i]=false; clust[i]=-1; }
 
 	p=core;
 	for (i=0;i<coreSize;i++)
@@ -508,17 +510,43 @@ int cluster(NODE** cl,int* clSize,int* clData,GRAPH* g,int gSize,NODE* core,int 
 
 	}
 
-	//add clusters
-	//TODO
+	*cln=clustNum;
+
+	*n = malloc(clustNum*sizeof(int));
+	
+	int *num;
+	num=*n;
+
+	//store clusters in data
+	for (i=0;i<clustNum;i++)
+	{ num[i]=0; }
 
 	for (i=0;i<pSize;i++)
-	{ 
-		printf ("%d in %d \n",i+1,clust[i]);
+	{
+		if (clust[i]==-1)
+		{ continue; }
+
+		data[ clust[i] ][ num[clust[i]] ] = i+1;
+		num[ clust[i] ]++;
 	}
-}		
+}	
+
+//print given Clusters
+void printCluster(int num[],int clustNum,int coreSize,int data[][coreSize])
+{
+	for (int i=0;i<clustNum;i++)
+	{
+		printf("( %2d [ ",i+1);
+		for (int j=0;j<num[i];j++)
+		{
+			printf("%2d ",data[i][j]);
+		}
+		printf("] )\n");
+	}
+}
+
 
 /* -- Functions used to Manipulate DLL (NODE and GRAPH) + Selection Sort  -- */
-
 
 //return node with specified values (initialize it)
 NODE* getNode(NODE* n,int ind,int size,double d[])
@@ -570,7 +598,9 @@ void printList(NODE* head,int d_s)
 	{
 		printf("(%2d [ ",head->index);
 		for (int i=0;i<d_s;i++)
-		{ printf("%3.2lf ",head->data[i]); }
+		{
+			printf("%3.2lf ",head->data[i]);
+		}	
 		printf("] )\n");
 		head=head->next;
 	}
