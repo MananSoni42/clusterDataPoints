@@ -47,6 +47,7 @@ int getDensity(NODE**,int,int,GRAPH*,int,int);
 int getCorePts(NODE**,int*,int,NODE*,int,NODE*,int,int);
 int cluster(GRAPH*,int,NODE*,int coreSize,int,int,int [][coreSize],int**,int*);
 void printCluster(int [],int,int coreSize,int data[][coreSize]);
+int findNoise(NODE**,int*,int,GRAPH*,int,NODE*,int,int);
 
 /* -- functions used to manipulate DLLs -- */
 
@@ -86,6 +87,9 @@ int main()
 
 	//store List of core points (their size is determined at runtime)
 	NODE* corePt=NULL; int coreSize,coreDataSize=1;
+
+	//store List of Noise points (size is 1 number is determined at runtime)
+	NODE* noisePt=NULL; int noiseSize,noiseDataSize=1;
 
 	//clusters sorted as arrays in data (variable number,variable size of each)
 	int *num,clustNum;
@@ -140,13 +144,22 @@ int main()
 	printf("\n Clusters: \n");
 	printCluster(num,clustNum,coreSize,data);
 				
+	//find out noise points
+	findNoise(&noisePt,&noiseSize,noiseDataSize,g,gSize,point,pSize,E);
+
+	//print the noise points
+	printf("\nNoise Points: \n");
+	printList(noisePt,noiseDataSize);
+
 	//free memory
+	free(num);
 	freeList(point);
 	freeList(m);
 	freeList(nbr);
 	freeGraph(g);
 	freeList(dnsty);
 	freeList(corePt);
+	freeList(noisePt);
 
 	printf("\n"); return 0;
 }
@@ -545,7 +558,62 @@ void printCluster(int num[],int clustNum,int coreSize,int data[][coreSize])
 	}
 }
 
+//find all noise points
+int findNoise(NODE** n,int* nSize,int nData,GRAPH* g,int gSize,NODE* p,int pSize,int E)
+{
+	GRAPH* m = g;
+	double a[pSize];
+	int i,j,ind=0;
+	bool flag=false;
 
+	NODE* r = p;
+	
+	for (i=0;i<pSize;i++)
+	{
+		if (p->t==core)
+		{  p=p->next; continue; }
+
+		//find graph of this point
+		m = g;
+		for (j=0;j<gSize;j++)
+		{
+			if (p->index == m->index)
+			{ break; }
+
+			m=m->next;
+		}
+
+		//check if any point has weight>=E
+		flag = false;
+		for (j=0;j<m->size;j++)
+		{
+			if (m->wght[j]>=E)
+			{		
+				flag=true;
+			        break;	
+			}
+		}
+
+		//if no such point is found,mark as noise point
+		if (flag==false)
+		{ 
+			p->t = noise;
+			a[ind] = p->index;
+			ind++;
+		}
+
+		p = p->next;
+	}
+
+	//sort and add the noise points
+	selection(a,ind);
+	for(i=0;i<ind;i++)
+	{
+		*n = addNode(*n,i+1,1,&a[i]);
+	}
+
+
+}
 /* -- Functions used to Manipulate DLL (NODE and GRAPH) + Selection Sort  -- */
 
 //return node with specified values (initialize it)
