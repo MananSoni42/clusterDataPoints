@@ -48,6 +48,8 @@ int getCorePts(NODE**,int*,int,NODE*,int,NODE*,int,int);
 int cluster(GRAPH*,int,NODE*,int coreSize,int,int,int [][coreSize],int**,int*);
 void printCluster(int [],int,int coreSize,int data[][coreSize]);
 int findNoise(NODE**,int*,int,GRAPH*,int,NODE*,int,int);
+int findBorder(NODE**,int*,int,NODE*,int);
+
 
 /* -- functions used to manipulate DLLs -- */
 
@@ -90,6 +92,9 @@ int main()
 
 	//store List of Noise points (size is 1 number is determined at runtime)
 	NODE* noisePt=NULL; int noiseSize,noiseDataSize=1;
+
+	//store List of Border points (size is 1 number is determined at runtime
+	NODE* borderPt=NULL; int bSize,bDataSize=1;
 
 	//clusters sorted as arrays in data (variable number,variable size of each)
 	int *num,clustNum;
@@ -146,10 +151,17 @@ int main()
 				
 	//find out noise points
 	findNoise(&noisePt,&noiseSize,noiseDataSize,g,gSize,point,pSize,E);
-
+	
 	//print the noise points
 	printf("\nNoise Points: \n");
 	printList(noisePt,noiseDataSize);
+	
+	//add Border Points
+	findBorder(&borderPt,&bSize,bDataSize,point,pSize);
+
+	//print Border Points
+	printf("\n Border points: \n");
+	printList(borderPt,bDataSize);	
 
 	//free memory
 	free(num);
@@ -165,7 +177,7 @@ int main()
 }
 
 
-/** -- Functions used in Main -- */
+/** -- Functions used in Main -- **/
 
 
 //get Data from File
@@ -605,6 +617,8 @@ int findNoise(NODE** n,int* nSize,int nData,GRAPH* g,int gSize,NODE* p,int pSize
 		p = p->next;
 	}
 
+	*nSize  = ind; 
+
 	//sort and add the noise points
 	selection(a,ind);
 	for(i=0;i<ind;i++)
@@ -614,6 +628,29 @@ int findNoise(NODE** n,int* nSize,int nData,GRAPH* g,int gSize,NODE* p,int pSize
 
 
 }
+
+int findBorder(NODE** b,int* bSize,int bData,NODE* p,int pSize)
+{
+	double a[pSize];
+	int ind=0;
+
+	for (int i=0;i<pSize;i++)
+	{
+		if (p->t==border)
+		{
+			a[ind++] = p->index;
+		}
+		p = p->next;
+	}
+
+	*bSize = ind;
+
+	for (int j=0;j<ind;j++)
+	{
+		*b = addNode(*b,j+1,1,&a[j]);
+	}
+}	
+
 /* -- Functions used to Manipulate DLL (NODE and GRAPH) + Selection Sort  -- */
 
 //return node with specified values (initialize it)
